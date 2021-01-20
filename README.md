@@ -1,6 +1,7 @@
 # TP ASE
 
 Adrien Holvoet : adrien.holvoet.etu@univ-lille.fr
+Mikolaï Krol : mikolai.krol.etu@univ-lille.fr
 
 ## TP1 Première manipulation pratique & Bibliothèque try()/throw()
 **La première manipulation pratique** se trouve dans le fichier display_stack.c. Dedans se trouve la fonction display_stack permettant d'afficher le RSP/RBP de la pile d'éxécution  
