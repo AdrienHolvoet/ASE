@@ -2,11 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "include/hardware.h"
-
-#define TIMER_PARAM     0xF4
-#define TIMER_ALARM     0xF8
-#define TIMER_IRQ       2
-#define HARDWARE_INI "hardware.ini"
+#include "include/hardware_config.h"
 
 #define MAGIC 0xDEADBEEF
 

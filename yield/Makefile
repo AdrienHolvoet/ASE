@@ -3,7 +3,6 @@ LIBNAME=hardware
 RM	= rm
 CC	= gcc
 LIBDIR  = lib
-INCDIR  = include
 LDLIBS	= -L$(LIBDIR) -l$(LIBNAME)
 
 all: yield
