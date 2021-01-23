@@ -30,6 +30,20 @@ struct ctx_s
 struct ctx_s *current_ctx = NULL;
 struct ctx_s *ctxs = NULL;
 
+/* renvoie 0 en cas de succes, autre valeur en cas d'echec (par ex. erreur de malloc)
+int init_ctx(struct ctx_s *ctx, int stack_size, func_t f, void *args) { 
+    ctx->magic = MAGIC;
+    ctx->stack = malloc(stack_size);
+    ctx->entryPoint = f;
+    ctx->etat = READY;
+    ctx->args = args;    
+    ctx->copie_rsp = ctx->stack + stack_size - 8;
+    ctx->copie_rbp = ctx->copie_rsp;
+    
+    return 0;
+}*/ 
+
+
 /* renvoie 0 en cas de succes, autre valeur en cas d'echec (par ex. erreur de malloc) */
 int create_ctx(int stack_size, func_t f, void *args)
 {
@@ -61,6 +75,8 @@ int create_ctx(int stack_size, func_t f, void *args)
 
         return 0;
 }
+
+
 
 void switch_to_ctx(struct ctx_s *ctx)
 {
