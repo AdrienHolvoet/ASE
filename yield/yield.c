@@ -41,8 +41,7 @@ int init_ctx(struct ctx_s *ctx, int stack_size, func_t f, void *args) {
     ctx->copie_rbp = ctx->copie_rsp;
     
     return 0;
-}*/ 
-
+}*/
 
 /* renvoie 0 en cas de succes, autre valeur en cas d'echec (par ex. erreur de malloc) */
 int create_ctx(int stack_size, func_t f, void *args)
@@ -75,8 +74,6 @@ int create_ctx(int stack_size, func_t f, void *args)
 
         return 0;
 }
-
-
 
 void switch_to_ctx(struct ctx_s *ctx)
 {
@@ -111,23 +108,35 @@ void switch_to_ctx(struct ctx_s *ctx)
 
 void yield()
 {
+
         struct ctx_s *next = current_ctx->next;
+        struct ctx_s *terminated;
+        if (next->etat == TERMINATED)
+        {
+                terminated = next;
+                next = next->next;
+        }
         _out(TIMER_ALARM, 0xFFFFFFFE);
         switch_to_ctx(next);
 }
 
 void ping(void *arg)
 {
-        int i;
+        int i = 0;
         while (1)
         {
+                if (i == 200)
+                {
+                        current_ctx->etat = TERMINATED;
+                }
+
                 printf("ping! %d\n", i++);
         }
 }
 
 void pong(void *arg)
 {
-        int i;
+        int i = 0;
         while (1)
         {
                 printf("pong! %d\n", i++);
@@ -136,7 +145,7 @@ void pong(void *arg)
 
 void pang(void *arg)
 {
-        int i;
+        int i = 0;
         while (1)
         {
                 printf("pang! %d\n", i++);
@@ -145,7 +154,7 @@ void pang(void *arg)
 
 void pung(void *arg)
 {
-        int i;
+        int i = 0;
         while (1)
         {
                 printf("pung! %d\n", i++);
