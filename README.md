@@ -1,11 +1,10 @@
-## TP2 Bibliothèque de création et changement de contexte
+# Rendu "Tp ASE"
+L'ensemble des tps sont organisés en sous-dossiers avec un README à l'intérieur pour expliquer ce qui a été fait.
 
-Pour ce TP nous avons tout d'abord créé une function *init_ctx* pour créer un contexte ctx avec une pile d’exécution de *stack_size* octets allouée dynamiquement.  
-Par la suite, nous avons implémenté la function *switch_to_ctx* pour créer un mécanisme de coroutines(switch d'un contexte à en autre indéfinement).  
-Ensuite nous avons étendu le struc *ctx_s* pour créer une liste circulaire et modifié le *init_ctx* par *create_ctx* pour initialiser dynamiquement la liste chainée de contexte.  Et en dernier lieu la primitive *yield()* permettant au contexte courant de passer la main à un autre, tout en gérant l'état TERMINATED, en effet nous skippons le contexte qui passe dans cette état.
+## Binôme
 
 
-## MakeFile TP2
+Nom, Prénom, email: KROL, Mikolaï, mikolai.krol.etu@univ-lille.fr
 
-Description du makefile :  
-Il suffit ici de lancer la commande make et ensuite l'exécutable ./yield 
+
+Nom, Prénom, email: HOLVOET, Adrien, adrien.holvoet.etu@univ-lile.fr
