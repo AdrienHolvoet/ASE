@@ -73,10 +73,10 @@ void producteur()
         sem_up(&mutex);         /* sortie de section critique */
         sem_up(&plein);         /* inc. nb place occupees */
 
-        if (plein.val == 50)
-        { // test changement de context avant que la tapon soit plein
+      /*  if (plein.val == 50)
+        { // test changement de context avant que la tampon soit plein
             yield();
-        }
+        }*/
        // print_sem_value(1);
     }
 }
