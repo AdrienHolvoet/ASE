@@ -12,10 +12,17 @@
 #define HARDWARE_INI "hardware.ini"
 #define PAGE_SIZE 4096
 #define TLB_ADD_ENTRY 0xCE
+#define TLB_DEL_ENTRY 0xDE
+#define NB_VPAGE 4
+#define NB_PPAGE 2
 #define MMU_CMD 0x66
 
 static FILE *swap_file = NULL;
-static int current_vpage = -1;
+
+static int vm_mapping[NB_VPAGE];
+static int pm_mapping[NB_PPAGE];
+
+static int next_page_to_replace = 0;
 
 static int
 init_swap(void)
@@ -70,7 +77,7 @@ struct tlb_entry_s
 void tlb_add_entry(struct tlb_entry_s entry)
 {
 	int val;
-	printf("Ajout TLB entry: vpage %d ppage %d\n", entry.virt_page, entry.phys_page); /* printf vivement conseillé */
+	printf("Ajout TLB entry: vpage %d ppage %d\n", entry.virt_page, entry.phys_page);
 	memcpy(&val, &entry, sizeof(int));
 	_out(TLB_ADD_ENTRY, val);
 }
@@ -83,46 +90,59 @@ int vaddr_to_vpage(unsigned long int vaddr)
 /* On associe la page virtuelle 0 à la page physique 1 */
 static void mmuhandler()
 {
+	printf("\n");
+	struct tlb_entry_s entry;
 	unsigned long int x = (unsigned)_in(MMU_FAULT_ADDR_LO);
 	unsigned long int y = (unsigned)_in(MMU_FAULT_ADDR_HI);
 	unsigned long int adresse_fautive = (y << 32) | x;
 	printf("Le mmuhandler s'est déclenché pour l'adresse fautive: %lx\n", adresse_fautive);
 
-	/* est ce que le processus utilisateur a demandé bien acces à la page 0 ? */
 	int vpage = vaddr_to_vpage(adresse_fautive);
 
-	/* charger depuis la swap: la page concernée (on utilise qu'une seule page physique pour l'instant: 0 */
+	if (pm_mapping[next_page_to_replace] != -1)
+	{
+		printf("On enregistre la valeur de la page physique currente %d dans le fichier swap correspondant à la vpage %d\n", next_page_to_replace + 1, pm_mapping[next_page_to_replace]);
+		store_to_swap(pm_mapping[next_page_to_replace], next_page_to_replace + 1);
+		entry.execution = entry.lecture = entry.ecriture = entry.is_active = 1; /* je met tout à 1 */
+		entry.virt_page = pm_mapping[next_page_to_replace];
+		entry.phys_page = next_page_to_replace + 1;
+		printf("Delete TLB entry: vpage %d ppage %d\n", entry.virt_page, entry.phys_page);
+		_out(TLB_DEL_ENTRY, *((int *)(&entry))); /*delete l'entrée tlb */
+		vm_mapping[entry.virt_page] = -1;		 /* on remet la valeur -1 à l'entrée du tableau correspondant à la plage virtuelle dont l'entrée tlb vient d'être supprimé, donc elle ne pointe plus vers une adresse physique*/
+	}
 
-	/* sauver eventuellement le contenu de la page physique vers le swap */
-	if (current_vpage != -1)
-		printf("On store la page physique %d vers la page virtuelle %d dans le fichier de swap\n", 1, current_vpage);
-	if (current_vpage != -1 && store_to_swap(current_vpage, 1) == -1)
+	printf("On charge le contenu de la page virtuelle %d depuis le swap vers la mémoire physique \n", vpage, next_page_to_replace + 1);
+	if (fetch_from_swap(vpage, next_page_to_replace + 1) == -1)
 	{
 		perror("acces au fichier de swap");
 		exit(1);
 	}
-	printf("On charge la page virtuelle %d depuis le swap vers la memoire physique (page 1)\n", vpage);
-	if (fetch_from_swap(vpage, 1) == -1)
-	{
-		perror("acces au fichier de swap");
-		exit(1);
-	}
 
+	vm_mapping[vpage] = next_page_to_replace;
+	pm_mapping[next_page_to_replace] = vpage;
 	/* rajoute l'entrée de tlb:  vpage <==> ppage:1 */
-	struct tlb_entry_s entry;
+
 	memset(&entry, 0, sizeof(entry));
 	entry.execution = entry.lecture = entry.ecriture = entry.is_active = 1; /* je met tout à 1 */
 	entry.virt_page = vpage;
-	entry.phys_page = 1;
-	_out(MMU_CMD, MMU_RESET);
+	entry.phys_page = next_page_to_replace + 1;
 
-	current_vpage = vpage;
-
+	next_page_to_replace = (next_page_to_replace + 1) % NB_PPAGE; /*on remplie toute les pages physiques disponibles une fois fait la premiere à remplacer revient 0*/
 	tlb_add_entry(entry);
+	printf("\n");
 }
 
 int main()
 {
+	int i;
+	for (i = 0; i < NB_PPAGE; i++)
+	{
+		pm_mapping[i] = -1;
+	}
+	for (i = 0; i < NB_VPAGE; i++)
+	{
+		vm_mapping[i] = -1;
+	}
 	if (init_hardware("hardware.ini") == 0)
 	{
 		printf("pb init hardware\n");
@@ -139,21 +159,56 @@ int main()
 
 	/* je lis un truc sur ma vpage 0  */
 	printf("la vpage 0 contient: %x\n", *ptr);
-	*ptr = 0x42;
+	*ptr = 0x0;
 	printf("la vpage 0 contient: %x\n", *ptr);
+	*ptr = 0x1;
 
 	/* maintenant, vpage 1 */
 	ptr += 4096; /* avancer d'une page */
 	printf("la vpage 1 contient: %x\n", *ptr);
-	*ptr = 0x39;
+	*ptr = 0x1;
 	printf("la vpage 1 contient: %x\n", *ptr);
 
-	/* je reviens a la vpage 0 */
-	ptr = virtual_memory;
-	printf("la vpage 0 contient: %x\n", *ptr);
-
-	/* maintenant, vpage 1 */
 	ptr += 4096; /* avancer d'une page */
-	printf("la vpage 1 contient: %x\n", *ptr);
+	printf("la vpage 2 contient: %x\n", *ptr);
+	*ptr = 0x2;
+	printf("la vpage 2 contient: %x\n\n", *ptr);
+
+	ptr += 4096; /* avancer d'une page */
+	printf("la vpage 3 contient: %x\n", *ptr);
+	*ptr = 0x33;
+	printf("la vpage 3 contient: %x\n\n", *ptr);
+
+	ptr -= 4096; /* reculer d'une page */
+	printf("Je peux lire sur vpage 2 qui contient: %x\n", *ptr);
+	*ptr = 0x0;
+	printf("Je peux modifier vpage 2 qui contient sans déclencher mmu: %x\n", *ptr);
+
+	ptr += 4096; /* avancer d'une page */
+	printf("Pareil pour la vpage 3 qui  contient: %x\n", *ptr);
+	*ptr = 0x44;
+	printf("je peux donc la modifier la vpage 3 qui contient maintenant : %x\n", *ptr);
+
+	ptr = virtual_memory; /* retour page 0 */
+
+	printf("J'ai réaccédé à la vpage 0 qui contient: %x ce qui a déclenche le mmu_handler \n", *ptr);
+	ptr += 3*4096; /* retour page 0 */
+
+	printf("Je peux toujours accèder la vpage 3 sans déclencher le mmu_handler car c'est la vpage 2 la plus ancienne qu'on a retiré l'entrée tlb, vpage 3 contient: %x\n", *ptr);
+
+	printf("Pages virtuelles accessibles sans déclencher le mmu_handler : ");
+	for (i = 0; i < NB_PPAGE; i++)
+	{
+		printf("%d  ", pm_mapping[i]);
+	}
+	printf("\n");
+	printf("Pages virtuelles n'ayant pas la valeur -1 on une entrée tlb et sont donc accessible sans déclencher le mmu_handler : ");
+	for (i = 0; i < NB_VPAGE; i++)
+	{
+		printf("%d  ", vm_mapping[i]);
+	}
+
+	printf("\n");
+
 	exit(1);
 }
