@@ -18,87 +18,92 @@ static FILE *swap_file = NULL;
 static int current_vpage = -1;
 
 static int
-init_swap(void) 
+init_swap(void)
 {
-    swap_file = fopen(".swap_file", "r+"); /* w+: create, read, write*/
-    return swap_file == NULL;
+	swap_file = fopen(".swap_file", "r+"); /* w+: create, read, write*/
+	return swap_file == NULL;
 }
 
-int
-store_to_swap(int vpage, int ppage) 
+int store_to_swap(int vpage, int ppage)
 {
-    if (swap_file == NULL)
-        if (init_swap()) 
-            return -2;
-    if (fseek(swap_file, vpage << 12, SEEK_SET) == -1) 
-        return -1;
-    if (fwrite((void*)((ppage << 12) | (uintptr_t)physical_memory), 
-               1, PAGE_SIZE, swap_file) == 0)
-        return -1;
-  return 0;
+	if (swap_file == NULL)
+		if (init_swap())
+			return -2;
+	if (fseek(swap_file, vpage << 12, SEEK_SET) == -1)
+		return -1;
+	if (fwrite((void *)((ppage << 12) | (uintptr_t)physical_memory),
+			   1, PAGE_SIZE, swap_file) == 0)
+		return -1;
+	return 0;
 }
 
-int 
-fetch_from_swap(int vpage, int ppage) 
+int fetch_from_swap(int vpage, int ppage)
 {
-    if (swap_file == NULL)
-        if (init_swap()) 
-            return -2;
-    if (fseek(swap_file, vpage << 12, SEEK_SET) == -1)  {
-	perror("fseek1");
-        return -1;
-    }
-    if (fread((void*)((ppage << 12) | (uintptr_t)physical_memory), 
-	      1, PAGE_SIZE, swap_file) == 0) {
-	perror("fread1");
-        return -1;
-    }
-    return 0;
+	if (swap_file == NULL)
+		if (init_swap())
+			return -2;
+	if (fseek(swap_file, vpage << 12, SEEK_SET) == -1)
+	{
+		perror("fseek1");
+		return -1;
+	}
+	if (fread((void *)((ppage << 12) | (uintptr_t)physical_memory),
+			  1, PAGE_SIZE, swap_file) == 0)
+	{
+		perror("fread1");
+		return -1;
+	}
+	return 0;
 }
 
-
-struct tlb_entry_s {
-        unsigned unused: 8;
-        unsigned virt_page: 12; /* numero de page! */
-        unsigned phys_page: 8; /* numero de page! */
-        unsigned execution: 1;
-        unsigned ecriture: 1;
-        unsigned lecture: 1;
-        unsigned is_active: 1;
+struct tlb_entry_s
+{
+	unsigned unused : 8;
+	unsigned virt_page : 12; /* numero de page! */
+	unsigned phys_page : 8;	 /* numero de page! */
+	unsigned execution : 1;
+	unsigned ecriture : 1;
+	unsigned lecture : 1;
+	unsigned is_active : 1;
 };
 
-void tlb_add_entry(struct tlb_entry_s entry) {
+void tlb_add_entry(struct tlb_entry_s entry)
+{
 	int val;
 	printf("Ajout TLB entry: vpage %d ppage %d\n", entry.virt_page, entry.phys_page); /* printf vivement conseillé */
 	memcpy(&val, &entry, sizeof(int));
-        _out(TLB_ADD_ENTRY, val);
+	_out(TLB_ADD_ENTRY, val);
 }
 
-int vaddr_to_vpage(unsigned long int vaddr) {
-	return (vaddr - (unsigned long int) virtual_memory) / 4096;
+int vaddr_to_vpage(unsigned long int vaddr)
+{
+	return (vaddr - (unsigned long int)virtual_memory) / 4096;
 }
 
-/* On associe la page virtuelle 0 à la page physique 1 */ 
-static void mmuhandler() {
+/* On associe la page virtuelle 0 à la page physique 1 */
+static void mmuhandler()
+{
 	unsigned long int x = (unsigned)_in(MMU_FAULT_ADDR_LO);
-	unsigned long int y = (unsigned) _in(MMU_FAULT_ADDR_HI);
+	unsigned long int y = (unsigned)_in(MMU_FAULT_ADDR_HI);
 	unsigned long int adresse_fautive = (y << 32) | x;
 	printf("Le mmuhandler s'est déclenché pour l'adresse fautive: %lx\n", adresse_fautive);
 
 	/* est ce que le processus utilisateur a demandé bien acces à la page 0 ? */
 	int vpage = vaddr_to_vpage(adresse_fautive);
 
-	/* charger depuis la swap: la page concernée (on utilise qu'une seule page physique pour l'instant: 0 */ 
+	/* charger depuis la swap: la page concernée (on utilise qu'une seule page physique pour l'instant: 0 */
 
-	/* sauver eventuellement le contenu de la page physique vers le swap */ 
+	/* sauver eventuellement le contenu de la page physique vers le swap */
 	if (current_vpage != -1)
 		printf("On store la page physique %d vers la page virtuelle %d dans le fichier de swap\n", 1, current_vpage);
-	if (current_vpage != -1 && store_to_swap(current_vpage, 1) == -1) {
+	if (current_vpage != -1 && store_to_swap(current_vpage, 1) == -1)
+	{
 		perror("acces au fichier de swap");
 		exit(1);
 	}
-	printf("On charge la page virtuelle %d depuis le swap vers la memoire physique (page 1)\n", vpage);	
-	if(fetch_from_swap(vpage, 1) == -1) {
+	printf("On charge la page virtuelle %d depuis le swap vers la memoire physique (page 1)\n", vpage);
+	if (fetch_from_swap(vpage, 1) == -1)
+	{
 		perror("acces au fichier de swap");
 		exit(1);
 	}
@@ -113,12 +118,13 @@ static void mmuhandler() {
 
 	current_vpage = vpage;
 
-	tlb_add_entry(entry); 	
-
+	tlb_add_entry(entry);
 }
 
-int main() {
-	if (init_hardware("hardware.ini") == 0) {
+int main()
+{
+	if (init_hardware("hardware.ini") == 0)
+	{
 		printf("pb init hardware\n");
 		exit(1);
 	}
@@ -127,18 +133,17 @@ int main() {
 	printf("physical_memory=%p virtual_memory=%p\n", physical_memory, virtual_memory);
 
 	IRQVECTOR[MMU_IRQ] = mmuhandler;
-	_mask(0x1001); /* 0x1000 == passer en mode user, et 0x0001 == activer les interruptions */ 
+	_mask(0x1001); /* 0x1000 == passer en mode user, et 0x0001 == activer les interruptions */
 
 	char *ptr = virtual_memory;
 
-	/* je lis un truc sur ma vpage 0  */ 
+	/* je lis un truc sur ma vpage 0  */
 	printf("la vpage 0 contient: %x\n", *ptr);
 	*ptr = 0x42;
 	printf("la vpage 0 contient: %x\n", *ptr);
 
-
-	/* maintenant, vpage 1 */ 
-	ptr += 4096; /* avancer d'une page */ 
+	/* maintenant, vpage 1 */
+	ptr += 4096; /* avancer d'une page */
 	printf("la vpage 1 contient: %x\n", *ptr);
 	*ptr = 0x39;
 	printf("la vpage 1 contient: %x\n", *ptr);
@@ -146,9 +151,9 @@ int main() {
 	/* je reviens a la vpage 0 */
 	ptr = virtual_memory;
 	printf("la vpage 0 contient: %x\n", *ptr);
-	
-	/* maintenant, vpage 1 */ 
-	ptr += 4096; /* avancer d'une page */ 
+
+	/* maintenant, vpage 1 */
+	ptr += 4096; /* avancer d'une page */
 	printf("la vpage 1 contient: %x\n", *ptr);
 	exit(1);
 }
