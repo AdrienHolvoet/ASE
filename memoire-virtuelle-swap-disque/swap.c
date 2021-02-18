@@ -120,14 +120,14 @@ static void mmuhandler()
 
 	vm_mapping[vpage] = next_page_to_replace;
 	pm_mapping[next_page_to_replace] = vpage;
-	/* rajoute l'entrée de tlb:  vpage <==> ppage:1 */
+	/* rajoute l'entrée de tlb */
 
 	memset(&entry, 0, sizeof(entry));
-	entry.execution = entry.lecture = entry.ecriture = entry.is_active = 1; /* je met tout à 1 */
+	entry.execution = entry.lecture = entry.ecriture = entry.is_active = 1; /* je mets tout à 1 */
 	entry.virt_page = vpage;
 	entry.phys_page = next_page_to_replace + 1;
 
-	next_page_to_replace = (next_page_to_replace + 1) % NB_PPAGE; /*on remplie toute les pages physiques disponibles une fois fait la premiere à remplacer revient 0*/
+	next_page_to_replace = (next_page_to_replace + 1) % NB_PPAGE; /*on remplit toute les pages physiques disponibles une fois fait la premiere à remplacer revient à 0*/
 	tlb_add_entry(entry);
 	printf("\n");
 }
