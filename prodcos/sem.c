@@ -48,7 +48,6 @@ void yield()
 {
     if (!current_ctx)
     {
-
         switch_to_ctx(ctx_ring);
     }
     else
@@ -107,7 +106,7 @@ void switch_to_ctx(struct ctx_s *ctx)
     );                                                             /*Ici on ne les liste pas à cause de gcc*/
 
     if (current_ctx->etat == READY)
-    { /* Mikolaï */
+    { 
         current_ctx->etat = ACTIVABLE;
 
         irq_enable();

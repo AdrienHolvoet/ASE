@@ -16,8 +16,8 @@ void init(void)
     void *ptr = virtual_memory;
     int res;
 
-    _int(SYSCALL_SWTCH_0);                          /*Déclenche l'IRQ 16, ce qui revient à appeler switch_to_proccess0() en mode maitre , si on l'appellait directement on le faerait en mode user donc on pourrait pas reset le MMU
-    On déclecnhe donc l'irq comme cela et quand il est délenché il s'éxécute tjrs en mode maitre
+    _int(SYSCALL_SWTCH_0);                          /*Déclenche l'IRQ 16, ce qui revient à appeler switch_to_proccess0() en mode maitre , si on l'appellait directement on le ferait en mode user donc on pourrait pas reset le MMU
+    On déclenche donc l'irq comme cela et quand il est délenché il s'éxécute tjrs en mode maitre
     */
     memset(ptr, 1, PAGE_SIZE * N / 2); /*On remplie nos N/2 pages virtuel avec des 1, ici ça va être les pages pair car on aura switch le current process à 0*/
     _int(SYSCALL_SWTCH_1);

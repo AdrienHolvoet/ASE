@@ -1,6 +1,16 @@
 #include "sem.c"
 #define N 100
 
+/*Le but de la semaphore mutex c'est l'exclusion mutuelle, c'est une sémpahore avec seuleument un jeton donc ça veut dire que on va bloquer l'acces à la ressours si plus
+ d'un processeur(thread) essaye d'y accèder, quand un second preccessus essaye d'ya accèder on a le deuxième sem dow qui va faire passer le context en bloqué
+ et donc attendra que le 1er thread est fini d'éxécuter la ressource critique pour libérer un jeton avec sem_up( le 2ième thread pourra alors accèder à la ressource critique
+ Qui dans ce cas est la mémoire tampon*/
+
+ /*le second type d'utilisation c'est la syncrhonisation de context où la, il faut que le context producteur est fini de remplir la file mémoire tampon pour aisin se bloquer et passer 
+ la main à l'autre contexte le consommmateur qui va conssomer l'ensemble des objets dispo dans la mémoire tampon pour ensuite se bloquer et passer la main au contexte producteur.
+ ça nous permet de nous assurer que le producteur ne va pas ajouter des données sur une file pleine et que le consommateur ne va pas essayer de retirer des données d'une file vide  */
+
+
 struct objet_t
 {
     char *nom;
@@ -59,7 +69,7 @@ void print_sem_value(int i)
 }
 
 struct sem_s mutex, vide, plein;
-
+ 
 void producteur()
 {
     struct objet_t objet;
@@ -71,7 +81,8 @@ void producteur()
         sem_down(&mutex);       /* entree en section critique */
         mettre_objet(objet);    /* mettre l’objet dans le tampon */
         sem_up(&mutex);         /* sortie de section critique */
-        sem_up(&plein);         /* inc. nb place occupees */
+        sem_up(&plein);  
+               /* inc. nb place occupees */
 
         /*  if (plein.val == 50)
         { // test changement de context avant que la tampon soit plein
@@ -86,7 +97,7 @@ void consommateur()
     struct objet_t objet;
     while (1)
     {
-
+        /*A chaque éxécution, au première tour de boucle : on débloque direct le context producteur et on utilise tout les objets pour ensuite effectuer le yield*/
         sem_down(&plein);      /* dec. nb emplacements occupes */
         sem_down(&mutex);      /* entree section critique */
         retirer_objet(&objet); /* retire un objet du tampon */
@@ -108,23 +119,11 @@ static void empty_it(void)
     return;
 }
 
-static void timer_it()
-{
-    printf("TIMER TIK");
-    static int tick = 0;
-    _out(TIMER_ALARM, 0xFFFFFFFE);
-    yield();
-}
 
 int main(int argc, char **argv)
 {
     unsigned int i;
     /* init hardware */
-    if (init_hardware(HARDWARE_INI) == 0)
-    {
-        fprintf(stderr, "Error in hardware initialization\n");
-        exit(EXIT_FAILURE);
-    }
 
     tampon = malloc(sizeof(struct tampon_t));
     init_tampon(tampon);
@@ -139,22 +138,5 @@ int main(int argc, char **argv)
 
     yield();
 
-    /* dummy interrupt handlers */
-    for (i = 0; i < 16; i++)
-        IRQVECTOR[i] = empty_it;
 
-    /* program timer */
-    IRQVECTOR[TIMER_IRQ] = timer_it;      /* j'associe le callback timer_it() a l'evenement 2 (== TIMER_IRQ) */
-    _out(TIMER_PARAM, 128 + 64 + 32 + 8); /* reset + alarm on + 8 tick / alarm */
-    _out(TIMER_ALARM, 0xFFFFFFFE);        /* alarm at next tick (at 0xFFFFFFFF) */
-
-    /* allows all IT */
-    _mask(1);
-
-    /* count for a while... */
-    while (1)
-    {
-    }
-    /* and exit! */
-    exit(EXIT_SUCCESS);
 }
