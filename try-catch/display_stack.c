@@ -11,7 +11,7 @@ void display_stack() {
        :               											/* depuis quelles variables on va lire */
        :            											/* lister l'ensemble des registres qu'on a modifié */
     );
-   printf_s("copie rsp(haut de pile) : %08lx  copie rbp(bas de pile) : %08lx \n", copie_rsp, copie_rbp);
+   printf("copie rsp(haut de pile) : %08lx  copie rbp(bas de pile) : %08lx \n", copie_rsp, copie_rbp);
 }
 
 int test_addition (int a, int b)

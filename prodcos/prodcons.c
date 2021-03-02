@@ -69,7 +69,7 @@ void print_sem_value(int i)
 }
 
 struct sem_s mutex, vide, plein;
- 
+
 void producteur()
 {
     struct objet_t objet;
@@ -81,8 +81,7 @@ void producteur()
         sem_down(&mutex);       /* entree en section critique */
         mettre_objet(objet);    /* mettre l’objet dans le tampon */
         sem_up(&mutex);         /* sortie de section critique */
-        sem_up(&plein);  
-               /* inc. nb place occupees */
+        sem_up(&plein);  /* inc. nb place occupees */
 
         /*  if (plein.val == 50)
         { // test changement de context avant que la tampon soit plein
