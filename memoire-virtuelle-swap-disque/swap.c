@@ -161,12 +161,12 @@ int main()
 	printf("la vpage 0 contient: %x\n", *ptr);
 	*ptr = 0x0;
 	printf("la vpage 0 contient: %x\n", *ptr);
-	*ptr = 0x1;
+	*ptr = 0x10;
 
 	/* maintenant, vpage 1 */
 	ptr += 4096; /* avancer d'une page */
 	printf("la vpage 1 contient: %x\n", *ptr);
-	*ptr = 0x1;
+	*ptr = 0x10;
 	printf("la vpage 1 contient: %x\n", *ptr);
 
 	ptr += 4096; /* avancer d'une page */

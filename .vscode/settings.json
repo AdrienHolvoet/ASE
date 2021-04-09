@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "cstdlib": "c",
+        "sem.h": "c",
+        "assert.h": "c",
+        "hardware_config.h": "c",
+        "hardware.h": "c",
+        "stdio.h": "c"
+    }
+}
